@@ -32,6 +32,7 @@ func processFileHandler(c *gin.Context) {
 
 	// 删除之前解压的文件
 	if err := deleteFilesInDir(DestPath); err != nil {
+		fmt.Printf("err: %v\n", err)
 		c.JSON(500, gin.H{"error": fmt.Sprintf("删除文件失败: %s", err.Error())})
 		return
 	}
@@ -49,6 +50,7 @@ func processFileHandler(c *gin.Context) {
 	// 遍历目录，查找包含 miner.log 的文件，并搜索 power on 和 power off 的行
 	minerResults, err := searchMinerLogs(DestPath)
 	if err != nil {
+		fmt.Printf("err: %v", err)
 		c.JSON(500, gin.H{"error": fmt.Sprintf("搜索 miner.log 失败: %s", err.Error())})
 		return
 	}
@@ -125,6 +127,14 @@ func untar(src, dest string) error {
 
 // deleteFilesInDir 删除指定目录中的所有文件
 func deleteFilesInDir(dir string) error {
+	_, err := os.Stat(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err // 其他错误
+	}
+
 	d, err := os.Open(dir)
 	if err != nil {
 		return err
