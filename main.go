@@ -16,7 +16,7 @@ func main() {
 
 	// 配置 CORS 中间件
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://139.180.221.200:3000"}
+	config.AllowOrigins = []string{"http://localhost:3000"}
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type"}
 
@@ -24,7 +24,8 @@ func main() {
 
 	// 处理文件上传请求
 	router.POST("/upload", handleUpload)
-	router.POST("/process", processFileHandler)
+	router.POST("/update", updateHandler)
+	router.GET("/fetch", fetchHandler)
 
 	// 启动服务器
 	router.Run(":8080")
