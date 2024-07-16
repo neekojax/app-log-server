@@ -19,65 +19,6 @@ const Result = "result"
 
 var resultCache = sync.Map{}
 
-// processFileHandler 处理文件处理的请求
-func processFileHandler(c *gin.Context) {
-	var json struct {
-		FileName string `json:"fileName"`
-	}
-
-	if err := c.ShouldBindJSON(&json); err != nil {
-		c.JSON(400, gin.H{"error": "无效的请求"})
-		return
-	}
-
-	if filepath.Ext(json.FileName) != ".tar" {
-		c.JSON(400, gin.H{"error": "文件不是 .tar 格式"})
-		return
-	}
-
-	// 检查缓存中是否已有处理结果
-	if cachedResult, found := resultCache.Load(json.FileName); found {
-		fmt.Printf("命中缓存(%v)...\n", json.FileName)
-		c.JSON(200, cachedResult)
-		return
-	}
-
-	// 删除之前解压的文件
-	//if err := deleteFilesInDir(DestPath); err != nil {
-	//	fmt.Printf("err: %v\n", err)
-	//	c.JSON(500, gin.H{"error": fmt.Sprintf("删除文件失败: %s", err.Error())})
-	//	return
-	//}
-
-	srcPath := filepath.Join("uploads", json.FileName)
-	destPath := DestPath
-
-	switchResults, err := processFile(srcPath, destPath)
-	if err != nil {
-		fmt.Printf("err: %v", err)
-		c.JSON(500, gin.H{"error": fmt.Sprintf("处理文件失败: %s", err.Error())})
-		return
-	}
-
-	// 遍历目录，查找包含 miner.log 的文件，并搜索 power on 和 power off 的行
-	minerResults, err := searchMinerLogs(DestPath)
-	if err != nil {
-		fmt.Printf("err: %v", err)
-		c.JSON(500, gin.H{"error": fmt.Sprintf("搜索 miner.log 失败: %s", err.Error())})
-		return
-	}
-
-	result := gin.H{
-		"switchLog": switchResults,
-		"powerLog":  minerResults,
-	}
-
-	// 将处理结果存入缓存
-	resultCache.Store(json.FileName, result)
-
-	c.JSON(200, result)
-}
-
 // processFile 解压 tar 文件
 func processFile(src, dest string) (map[string][]string, error) {
 	// 获取压缩文件的名字（不含扩展名）
@@ -286,6 +227,7 @@ func searchMinerLogs(root string) (map[string][]string, error) {
 				return err
 			}
 			if len(lines) > 0 {
+				fmt.Printf("power path: %v\n", path)
 				pathParts := strings.Split(path, "/")
 				results[pathParts[3]] = append(results[pathParts[3]], lines...)
 			}
@@ -383,7 +325,7 @@ func updateHandler(c *gin.Context) {
 	}
 
 	// 遍历目录，查找包含 miner.log 的文件，并搜索 power on 和 power off 的行
-	minerResults, err := searchMinerLogs(DestPath)
+	minerResults, err := searchMinerLogs(filepath.Join(DestPath, strings.TrimSuffix(filepath.Base(srcPath), filepath.Ext(srcPath))))
 	if err != nil {
 		fmt.Printf("err: %v", err)
 		c.JSON(500, gin.H{"error": fmt.Sprintf("搜索 miner.log 失败: %s", err.Error())})
@@ -396,7 +338,15 @@ func updateHandler(c *gin.Context) {
 	}
 
 	// 将处理结果存入缓存
-	resultCache.Store(json.FileName, result)
+	// 移除 FileName 中的 "antminer_log_" 子字符串
+	cleanedFileName := strings.Replace(json.FileName, "antminer_log_", "", -1)
+	cleanedFileName = strings.Replace(cleanedFileName, "0A_8F_52_17_F9_21_", "", -1)
+	cleanedFileName = strings.Replace(cleanedFileName, "2024_", "", -1)
+
+	// 将结果存储到 resultCache 中
+	resultCache.Store(cleanedFileName, result)
+
+	//resultCache.Store(json.FileName, result)
 
 	c.JSON(200, gin.H{"message": "缓存已更新"})
 }
