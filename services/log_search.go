@@ -22,6 +22,7 @@ func SearchFiles(root string) (map[string][]string, error) {
 		if !info.IsDir() && strings.Contains(info.Name(), "message") {
 			lines, err := readStratumLines(path)
 			if err != nil {
+				fmt.Printf("read stratum err\n")
 				return err
 			}
 			if len(lines) > 0 {

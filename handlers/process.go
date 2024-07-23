@@ -30,7 +30,7 @@ func UpdateHandler(c *gin.Context) {
 
 	switchResults, err := services.ProcessFile(srcPath, destPath)
 	if err != nil {
-		fmt.Printf("err: %v", err)
+		fmt.Printf("ProcessFile err: %v", err)
 		c.JSON(500, gin.H{"error": fmt.Sprintf("处理文件失败: %s", err.Error())})
 		return
 	}
@@ -38,7 +38,7 @@ func UpdateHandler(c *gin.Context) {
 	// 遍历目录，查找包含 miner.log 的文件，并搜索 power on 和 power off 的行
 	minerResults, err := services.SearchMinerLogs(filepath.Join(services.DestPath, strings.TrimSuffix(filepath.Base(srcPath), filepath.Ext(srcPath))))
 	if err != nil {
-		fmt.Printf("err: %v", err)
+		fmt.Printf("SearchMinerLogs err: %v", err)
 		c.JSON(500, gin.H{"error": fmt.Sprintf("搜索 miner.log 失败: %s", err.Error())})
 		return
 	}

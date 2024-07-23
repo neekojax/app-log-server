@@ -33,7 +33,8 @@ func ProcessFile(src, dest string) (map[string][]string, error) {
 
 	// 在目标目录中解压文件
 	if err := untar(src, destPath); err != nil {
-		return nil, err
+		fmt.Printf("untar err\n")
+		//return nil, err
 	}
 
 	results, err := SearchFiles(destPath)
